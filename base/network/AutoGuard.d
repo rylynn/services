@@ -1,1 +1,0 @@
-AutoGuard.o: AutoGuard.cpp
