@@ -86,7 +86,7 @@ int Socket::Write(char* data, uint32_t size) {
     w_ret = write(fd_,wbuf+w_index_,real_size>RDBUF_SIZE?RDBUF_SIZE:real_size);
     if (w_ret < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
       if (wbytes < size) {
-        w_index_ = wbytes;
+        w_index_ += wbytes;
       }
       w_ret = kReturnEAGAIN;
       break;
@@ -127,6 +127,7 @@ void Socket::ResetRdBuffer() {
 }
 
 void Socket::ResetWrBuffer() {
+  w_index_ = 0;
   memset(wbuf, 0 ,RDBUF_SIZE);
 }
 }
