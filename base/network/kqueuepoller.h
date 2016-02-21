@@ -17,6 +17,7 @@ public:
   int AddEvent(ActiveEvent& ev); 
   void RemoveEvent(ActiveEvent& ev);
   void EnableWrite(int fd);
+  void DisableWrite(int fd);
 private:
   int kqueufd_;
   struct kevent* kevent_ptr_;

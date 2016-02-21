@@ -65,4 +65,10 @@ void KqueuPoller::EnableWrite(int fd) {
   kevent(kqueufd_, &ke, 1, NULL, 0, NULL);
 }
 
+void KqueuPoller::DisableWrite(int fd) {
+  struct kevent ke;
+  EV_SET(&ke, fd, EVFILT_WRITE ,EV_DISABLE, 0, 0, NULL);
+  kevent(kqueufd_, &ke, 1, NULL, 0, NULL);
+}
+
 }

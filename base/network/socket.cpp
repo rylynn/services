@@ -4,6 +4,8 @@
 #include <fcntl.h> 
 #include <errno.h>
 #include <iostream>
+#include "buffer.h"
+#include <assert.h>
 namespace service {
 Socket::Socket(Address& addr, PROTOCOL protocol):fd_(-1), w_index_(0),addr_(addr) {
   if (protocol == TCP) {
@@ -70,6 +72,29 @@ int Socket::Read(uint32_t& size) {
   return r_ret;
 }
 
+int Socket::Read(Buffer& buffer) {
+  std::cout<<"[+]Socket::Read()"<< std::endl;
+  int rbytes = 0;
+  int r_ret = 0;
+  char t_rbuf[READFRAME] = {0};
+  do {
+    r_ret = read(fd_, t_rbuf,READFRAME);
+    if (r_ret < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+      r_ret = kReturnok;
+      break;
+    } else if (r_ret < 0) {
+      return kReturnSysErr;
+    } else if (r_ret == 0) {
+      return kReturnCloseFd;
+    }
+    rbytes += r_ret;
+  } while(1);
+  std::cout<<"total bytes"<<rbytes<<" socket recv:" << rbuf << std::endl;
+  buffer.Append(t_rbuf, rbytes);
+  std::cout<<"[-]Socket::Read(),ret:"<<r_ret<< std::endl;
+  return r_ret;
+}
+
 int Socket::Write(char* data, uint32_t size) {
   if (size == 0) {
     return kReturnSysErr;
@@ -99,6 +124,33 @@ int Socket::Write(char* data, uint32_t size) {
     if (wbytes >= real_size) break;
   } while(1);
   std::cout<<"[-]Socket::Write, ret:"<<w_ret<< " write data:"<< data <<std::endl;
+  return wbytes;
+}
+
+int Socket::Write(Buffer& buffer, uint32_t size, uint32_t& haswrite) {
+  std::cout<<"[+]Socket::Write" << std::endl;
+  if (buffer.ReadableSize() == 0 || size <= 0) {
+    return kReturnok;
+  }
+  int wbytes = 0;
+  int w_ret = 0;
+  do {
+    w_ret = write(fd_, buffer.Peek(), size < READFRAME?size:READFRAME);
+    if (w_ret < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+      w_ret = kReturnEAGAIN;
+      break;
+    } else if(w_ret < 0) {
+      wbytes = kReturnSysErr;
+      break;
+    }
+    buffer.HasRead(w_ret);
+    wbytes += w_ret;
+    std::cout<<"loop write bytes:" << wbytes << std::endl;
+    assert(wbytes <= size);
+    if (wbytes >= size) break;
+  } while(1);
+  haswrite = wbytes;
+  std::cout<<"[-]Socket::Write, ret:"<<w_ret<< " write data:"<< buffer.Peek() <<std::endl;
   return wbytes;
 }
 

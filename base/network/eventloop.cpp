@@ -3,13 +3,16 @@
 #include <string>
 #include "common.h"
 #include "socket.h"
+#include "channel.h"
 #include "poller.h"
 #include <iostream>
 #include "kqueuepoller.h"
+#include "eventdispatcher.h"
 namespace service {
-bool EventLoop::Init(Poller* poll) {
+bool EventLoop::Init(Poller* poll, EventDispatcher* dispatcher) {
   bool ret = true;
   do {
+  dispatcher_ = dispatcher;
   poll_ = poll;
   poll_->Init(event_size_);
   event_map_.clear();
@@ -29,7 +32,8 @@ bool EventLoop::Init(Poller* poll) {
   }
   share_socket_ptr->SetNoDelay();
   share_socket_ptr->SetReUseAddr();
-  event_map_.insert(std::make_pair(share_socket_ptr->fd_, share_socket_ptr));
+  boost::shared_ptr<Channel> shared_channel_ptr(new Channel(*share_socket_ptr.get()));
+  event_map_.insert(std::make_pair(shared_channel_ptr->fd(), shared_channel_ptr));
   ActiveEvent ae;
   ae.fd = share_socket_ptr->fd_;
   server_fd_ = ae.fd;
@@ -54,55 +58,62 @@ int EventLoop::Run() {
       }
       std::cout<<"event comes" << std::endl;
       for (::std::vector<ActiveEvent>::iterator iter = active_events_.begin(); iter != active_events_.end(); iter++) {
-        std::map<int , boost::shared_ptr<Socket> >::iterator socket_iter = event_map_.find(iter->fd);
-        if ( socket_iter != event_map_.end()){
+        std::map<int , boost::shared_ptr<Channel> >::iterator channel_iter = event_map_.find(iter->fd);
+        if ( channel_iter != event_map_.end()){
           if (iter->mask & READABLE) {
             if (iter->fd == server_fd_) {
-              int new_fd = socket_iter->second->Accept();
+              int new_fd = channel_iter->second->Accept();
               std::cout<<"accept event comes, new_fd:" << new_fd <<std::endl;
               boost::shared_ptr<Socket> new_socket(new Socket(new_fd));
               new_socket->SetNoneBlock();
-              event_map_.insert(std::make_pair(new_fd, new_socket));
+              boost::shared_ptr<Channel> new_channel(new Channel(*new_socket.get()));
+              event_map_.insert(std::make_pair(new_fd, new_channel));
               ActiveEvent ae;
               ae.fd = new_fd;
               ae.mask |= READABLE;
               poll_->AddEvent(ae);
             } else {
-              uint32_t read_size = 0;
-              int r_ret = socket_iter->second->Read(read_size);
+              std::cout << "read1"<<std::endl;
+              int r_ret = channel_iter->second->Read();
               if (r_ret == kReturnSysErr || r_ret == kReturnCloseFd) {
                 ActiveEvent ae;
-                ae.fd = socket_iter->first;
+                ae.fd = channel_iter->first;
                 ae.mask |= READABLE;
-                event_map_.erase(socket_iter);
+                event_map_.erase(channel_iter);
                 poll_->RemoveEvent(ae);
-                socket_iter->second->Close();
+                channel_iter->second->Close();
               }
-              if (read_size > 0) {
-                std::cout << "on_message:"<< socket_iter->second->GetRdBuffer() << std::endl;
-                //socket_iter->second->Write(socket_iter->second->GetRdBuffer(), strnlen(socket_iter->second->GetRdBuffer(), READFRAME));
-                socket_iter->second->ResetRdBuffer();
+              std::cout << "read2"<<std::endl;
+              if (r_ret == kReturnok && channel_iter->second->GetRdBuffer().ReadableSize() > 0) {
+                std::cout << "on_message:"<< channel_iter->second->GetRdBuffer().Peek() << std::endl;
+                channel_iter->second->Write(channel_iter->second->GetRdBuffer().Peek(), channel_iter->second->GetRdBuffer().ReadableSize());
+                dispatcher_->DispatcherEvent(READEVENT, channel_iter->first, channel_iter->second->GetRdBuffer());
+                //channel_iter->second->GetRdBuffer().HasRead(channel_iter->second->GetRdBuffer().ReadableSize());
                 //socket_iter->second->ResetWrBuffer();
               }
             }
           }
           if (iter->mask & WRITABLE) {
-            uint32_t write_size = strnlen(socket_iter->second->GetWrBuffer(), READFRAME);
+            uint32_t write_size = channel_iter->second->GetWrBuffer().ReadableSize();
             if (write_size > 0) {
-              int ret = socket_iter->second->Write(socket_iter->second->GetWrBuffer(), write_size);
+              int ret = channel_iter->second->Write(channel_iter->second->GetWrBuffer().Peek(), write_size);
+              channel_iter->second->GetWrBuffer().HasRead(write_size);
               if (ret == kReturnSysErr) {
                 ActiveEvent ae;
-                ae.fd = socket_iter->first;
+                ae.fd = channel_iter->first;
                 ae.mask |= WRITABLE;
-                event_map_.erase(socket_iter);
+                event_map_.erase(channel_iter);
                 poll_->RemoveEvent(ae);
-                socket_iter->second->Close();
+                channel_iter->second->Close();
                 continue;
               } else if (ret == kReturnEAGAIN) {
-                static_cast<KqueuPoller*>(poll_)->EnableWrite(socket_iter->first);
+                static_cast<KqueuPoller*>(poll_)->EnableWrite(channel_iter->first);
                 continue;
               }
-              socket_iter->second->ResetWrBuffer();
+              if (channel_iter->second->GetWrBuffer().ReadableSize() == 0) {
+                channel_iter->second->GetWrBuffer().Clear();
+                static_cast<KqueuPoller*>(poll_)->DisableWrite(channel_iter->first);
+              }
             }
           }
         } else {

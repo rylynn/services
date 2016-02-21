@@ -5,4 +5,6 @@ static int kReturnSysErr = -1;
 static int kReturnArgumentErr = 1;
 static int kReturnCloseFd = 101;
 static int kReturnEAGAIN = 102;
+
+static int kNullChannel = 0;
 #endif

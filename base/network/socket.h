@@ -38,6 +38,8 @@ struct Address {
   uint16_t port_;
 };
 
+class Buffer;
+
 class Socket 
 {
 public:
@@ -54,6 +56,8 @@ public:
   int Connect();
   int Read(uint32_t& size);
   int Write(char* data, uint32_t size);
+  int Read(Buffer& buffer);
+  int Write(Buffer& buffer, uint32_t size, uint32_t& haswrite);
   int Accept();
   char* GetRdBuffer() {return rbuf;}
   char* GetWrBuffer() {return wbuf;}
