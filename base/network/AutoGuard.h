@@ -3,8 +3,14 @@
 namespace service {
 template <class T>
 class AutoGuard {
-  AutoGuard(T) {T.Lock();}
-  ~AutoGuard() {T.UnLock();}
+public:
+  AutoGuard(T* t) {
+    t_ = t;
+    t_->Lock();
+  }
+  ~AutoGuard() {t_->UnLock();}
+private:
+  T* t_;
 };
 }
 #endif
