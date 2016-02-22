@@ -45,7 +45,7 @@ bool EventLoop::Init(Poller* poll, EventDispatcher* dispatcher) {
 
 int EventLoop::Run() {
   if (poll_) {
-    std::cout<<"start to poll" << std::endl;
+    std::cout<<"loop start" << std::endl;
     struct timespec tvp;
     tvp.tv_sec = 0;
     tvp.tv_nsec = 500;
@@ -73,41 +73,24 @@ int EventLoop::Run() {
               ae.mask |= READABLE;
               poll_->AddEvent(ae);
             } else {
-              std::cout << "read1"<<std::endl;
               int r_ret = channel_iter->second->Read();
               if (r_ret == kReturnSysErr || r_ret == kReturnCloseFd) {
-                ActiveEvent ae;
-                ae.fd = channel_iter->first;
-                ae.mask |= READABLE;
-                event_map_.erase(channel_iter);
-                poll_->RemoveEvent(ae);
-                channel_iter->second->Close();
-              }
-              std::cout << "read2"<<std::endl;
-              if (r_ret == kReturnok && channel_iter->second->GetRdBuffer().ReadableSize() > 0) {
-                std::cout << "on_message:"<< channel_iter->second->GetRdBuffer().Peek() << std::endl;
-                channel_iter->second->Write(channel_iter->second->GetRdBuffer().Peek(), channel_iter->second->GetRdBuffer().ReadableSize());
+                RemoveChannel(channel_iter->second);
+                continue;
+              } else if (r_ret == kReturnok && channel_iter->second->GetRdBuffer().ReadableSize() > 0) {
                 dispatcher_->DispatcherEvent(READEVENT, channel_iter->first, channel_iter->second->GetRdBuffer());
-                //channel_iter->second->GetRdBuffer().HasRead(channel_iter->second->GetRdBuffer().ReadableSize());
-                //socket_iter->second->ResetWrBuffer();
               }
             }
-          }
-          if (iter->mask & WRITABLE) {
+          } else if (iter->mask & WRITABLE) {
             uint32_t write_size = channel_iter->second->GetWrBuffer().ReadableSize();
             if (write_size > 0) {
               int ret = channel_iter->second->Write(channel_iter->second->GetWrBuffer().Peek(), write_size);
               channel_iter->second->GetWrBuffer().HasRead(write_size);
               if (ret == kReturnSysErr) {
-                ActiveEvent ae;
-                ae.fd = channel_iter->first;
-                ae.mask |= WRITABLE;
-                event_map_.erase(channel_iter);
-                poll_->RemoveEvent(ae);
-                channel_iter->second->Close();
                 continue;
               } else if (ret == kReturnEAGAIN) {
                 static_cast<KqueuPoller*>(poll_)->EnableWrite(channel_iter->first);
+                RemoveChannel(channel_iter->second);
                 continue;
               }
               if (channel_iter->second->GetWrBuffer().ReadableSize() == 0) {
@@ -115,6 +98,8 @@ int EventLoop::Run() {
                 static_cast<KqueuPoller*>(poll_)->DisableWrite(channel_iter->first);
               }
             }
+          } else if (iter->mask & ERROR) {
+            dispatcher_->DispatcherEvent(ERROREVENT, channel_iter->first , channel_iter->second->GetWrBuffer());
           }
         } else {
           return kReturnSysErr;
@@ -127,4 +112,14 @@ int EventLoop::Run() {
   }
   return kReturnok;
 }
+
+void EventLoop::RemoveChannel(boost::shared_ptr<Channel>& channel) {
+    ActiveEvent ae;
+    ae.fd = channel->fd();
+    ae.mask = WRITABLE | READABLE;
+    channel->Close();
+    poll_->RemoveEvent(ae);
+    event_map_.erase(channel->fd());
+}
+
 }

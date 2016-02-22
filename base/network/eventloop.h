@@ -1,6 +1,6 @@
 #ifndef EVENTLOOP_H
 #define EVENTLOOP_H
-#include <shared_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <map>
 #include <vector>
 #include "socket.h"
@@ -9,6 +9,7 @@
 namespace service {
 static const int READABLE = 1;
 static const int WRITABLE = 2;
+static const int ERROR = 4;
 class Poller;
 class Channel;
 class EventDispatcher;
@@ -20,6 +21,8 @@ public:
   int Run();
   ::std::vector<ActiveEvent>& PollData(){return active_events_;}
   void SetEventSize(uint32_t size) {event_size_ = size;}
+private:
+  void RemoveChannel(boost::shared_ptr<Channel>& channel);
 private:
   std::map<int , boost::shared_ptr<Channel> > event_map_;
   ::std::vector<ActiveEvent> active_events_;
