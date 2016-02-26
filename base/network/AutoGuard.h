@@ -4,13 +4,17 @@ namespace service {
 template <class T>
 class AutoGuard {
 public:
-  AutoGuard(T* t) {
+  AutoGuard(T* t, T::*lock(), T::*Unlock()) {
     t_ = t;
-    t_->Lock();
+    if (lock != NULL) {
+      lock();
+    }
+    undo = Unlock;
   }
-  ~AutoGuard() {t_->UnLock();}
+  ~AutoGuard() { undo();}
 private:
   T* t_;
+  void (T::*undo)();
 };
 }
 #endif
