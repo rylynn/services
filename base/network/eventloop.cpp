@@ -87,10 +87,10 @@ int EventLoop::Run() {
               int ret = channel_iter->second->Write(channel_iter->second->GetWrBuffer().Peek(), write_size);
               channel_iter->second->GetWrBuffer().HasRead(write_size);
               if (ret == kReturnSysErr) {
+                RemoveChannel(channel_iter->second);
                 continue;
               } else if (ret == kReturnEAGAIN) {
                 static_cast<KqueuPoller*>(poll_)->EnableWrite(channel_iter->first);
-                RemoveChannel(channel_iter->second);
                 continue;
               }
               if (channel_iter->second->GetWrBuffer().ReadableSize() == 0) {
