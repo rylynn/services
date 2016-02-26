@@ -6,15 +6,18 @@ class AutoGuard {
 public:
   AutoGuard(T* t, T::*lock(), T::*Unlock()) {
     t_ = t;
-    if (lock != NULL) {
-      lock();
+    if (lock != NULL && t_ != NULL) {
+      lock(t_);
     }
-    undo = Unlock;
+    undo_ = Unlock;
   }
-  ~AutoGuard() { undo();}
+  ~AutoGuard() { 
+    if (t_ != NULL && undo_ != NULL)
+      undo_(t_);
+  }
 private:
   T* t_;
-  void (T::*undo)();
+  void (T::*undo_)();
 };
 }
 #endif
