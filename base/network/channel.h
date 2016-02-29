@@ -9,6 +9,8 @@ public:
   int fd() {return socket_.fd_;}
   int Read();
   int Write(const char* buffer, uint32_t size);
+  int Write();
+  void AsynWrite(const char* buffer, uint32_t size);
   int Accept() { return socket_.Accept();}
   Buffer& GetRdBuffer(){ return rd_buffer_;}
   Buffer& GetWrBuffer() {return wr_buffer_;}

@@ -13,14 +13,18 @@ static const int ERROR = 4;
 class Poller;
 class Channel;
 class EventDispatcher;
+class TimerManager;
 class EventLoop
 {
 public:
   EventLoop():poll_(NULL),event_size_(1024){;}
-  bool Init(Poller* poll, EventDispatcher* dispatcher);
+  bool Init(Poller* poll, EventDispatcher* dispatcher, TimerManager* timer_manager);
   int Run();
   ::std::vector<ActiveEvent>& PollData(){return active_events_;}
   void SetEventSize(uint32_t size) {event_size_ = size;}
+public:
+  int SendMessage(int channel_id, const char* data, uint32_t size);
+  uint32_t GetNow();
 private:
   void RemoveChannel(boost::shared_ptr<Channel>& channel);
 private:
@@ -28,6 +32,7 @@ private:
   ::std::vector<ActiveEvent> active_events_;
   Poller* poll_;
   EventDispatcher* dispatcher_;
+  TimerManager* timer_manager_;
   uint32_t event_size_;
   int server_fd_;
 };

@@ -61,7 +61,7 @@ void KqueuPoller::RemoveEvent(ActiveEvent& ev) {
 
 void KqueuPoller::EnableWrite(int fd) {
   struct kevent ke;
-  EV_SET(&ke, fd, EVFILT_WRITE ,EV_ENABLE, 0, 0, NULL);
+  EV_SET(&ke, fd, EVFILT_WRITE , EV_ADD | EV_ENABLE, 0, 0, NULL);
   kevent(kqueufd_, &ke, 1, NULL, 0, NULL);
 }
 

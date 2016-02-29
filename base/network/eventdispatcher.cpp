@@ -3,19 +3,23 @@
 #include "handler.h"
 #include "buffer.h"
 #include "common.h"
+#include "eventloop.h"
+#include <iostream>
 namespace service {
 using std::string;
-int EventDispatcher::RegisterHandler(EVENTTYPE event, boost::shared_ptr<Handler>& handler) {
-    if (handler.get() == NULL) {
+int EventDispatcher::RegisterHandler(EVENTTYPE event, Handler* handler) {
+    if (handler == NULL) {
       return kReturnArgumentErr;
     }
     std::map<EVENTTYPE, map<int, boost::shared_ptr<Handler> > >::iterator handler_maps_iter = handler_maps_.find(event);
     if (handler_maps_iter == handler_maps_.end()) {
       map<int, boost::shared_ptr<Handler> > handler_map;
-      handler_map.insert(std::make_pair(event, handler));
+      boost::shared_ptr<Handler> handler_ptr(handler);
+      handler_map.insert(std::make_pair(event, handler_ptr));
       handler_maps_.insert(std::make_pair(event, handler_map));
     } else {
-      handler_maps_iter->second.insert(std::make_pair(event , handler));
+      boost::shared_ptr<Handler> handler_ptr(handler);
+      handler_maps_iter->second.insert(std::make_pair(event , handler_ptr));
     }
     return kReturnok;
 }
@@ -47,6 +51,9 @@ int EventDispatcher::DispatcherEvent(EVENTTYPE event, int channel_id, Buffer& bu
        handler_iter->second->onConnect(channel_id);
      } else if (event == ERROREVENT){
        handler_iter->second->onHandleError(channel_id, message);
+     } else if (event == WRITEEVENT) {
+       std::cout<<"disptach write event" << std::endl;
+       eventloop_->SendMessage(channel_id, message.c_str(), message.length());
      }
    }
   } while(false); 

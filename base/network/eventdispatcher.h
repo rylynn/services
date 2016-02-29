@@ -18,12 +18,13 @@ class Handler;
 class EventLoop;
 class EventDispatcher {
 public:
-  int RegisterHandler(EVENTTYPE event, boost::shared_ptr<Handler>& handler);
+  EventDispatcher(EventLoop* eventloop):eventloop_(eventloop){;}
+  int RegisterHandler(EVENTTYPE event, Handler* handler);
   int RemoveHandler(int handler_key);
-
   int DispatcherEvent(EVENTTYPE event, int channel_id, Buffer& buffer);
 private:
   map<EVENTTYPE, map<int, boost::shared_ptr<Handler> > > handler_maps_; 
+  EventLoop* eventloop_;
 };
 
 }
