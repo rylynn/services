@@ -90,19 +90,6 @@ int EventLoop::Run() {
               }
             }
           } else if (iter->mask & WRITABLE) {
-<<<<<<< HEAD
-            int ret = channel_iter->second->Write();
-            if (ret == kReturnSysErr) {
-              continue;
-            } else if (ret == kReturnEAGAIN) {
-              static_cast<KqueuPoller*>(poll_)->EnableWrite(channel_iter->first);
-              RemoveChannel(channel_iter->second);
-              continue;
-            }
-            if (channel_iter->second->GetWrBuffer().ReadableSize() == 0) {
-              channel_iter->second->GetWrBuffer().Clear();
-              static_cast<KqueuPoller*>(poll_)->DisableWrite(channel_iter->first);
-=======
             uint32_t write_size = channel_iter->second->GetWrBuffer().ReadableSize();
             if (write_size > 0) {
               int ret = channel_iter->second->Write(channel_iter->second->GetWrBuffer().Peek(), write_size);
@@ -118,7 +105,6 @@ int EventLoop::Run() {
                 channel_iter->second->GetWrBuffer().Clear();
                 static_cast<KqueuPoller*>(poll_)->DisableWrite(channel_iter->first);
               }
->>>>>>> 262e1516f4ee4af5242c7a3f1a8b2ec513a5a151
             }
           } else if (iter->mask & ERROR) {
             dispatcher_->DispatcherEvent(ERROREVENT, channel_iter->first , channel_iter->second->GetWrBuffer());
