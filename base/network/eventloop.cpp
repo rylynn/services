@@ -105,6 +105,9 @@ int EventLoop::Run() {
                 channel_iter->second->GetWrBuffer().Clear();
                 static_cast<KqueuPoller*>(poll_)->DisableWrite(channel_iter->first);
               }
+            } else {
+              static_cast<KqueuPoller*>(poll_)->DisableWrite(channel_iter->first);
+            }
             }
           } else if (iter->mask & ERROR) {
             dispatcher_->DispatcherEvent(ERROREVENT, channel_iter->first , channel_iter->second->GetWrBuffer());
