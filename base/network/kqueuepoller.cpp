@@ -5,6 +5,8 @@
 #include "eventloop.h"
 #include "common.h"
 #include <iostream>
+#include <utility/tick.h>
+
 namespace service {
 int KqueuPoller::Init(uint32_t size) {
   kevent_ptr_ = (struct kevent*)malloc(sizeof(struct kevent) * kEventSize);

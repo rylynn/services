@@ -10,6 +10,7 @@ public:
   virtual void onReceiveMessage(int channel_id, string message) = 0;
   virtual void onHandleError(int channel_id, string message) = 0;
   virtual void onConnect(int channel_id) = 0;
+  virtual ~Handler(){;}
 protected:
   boost::shared_ptr<Codec> codec_;
 };

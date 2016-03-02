@@ -11,6 +11,7 @@ public:
   void onReceiveMessage(int channel_id, string message);
   void onHandleError(int channel_id, string message){;}
   void onConnect(int channel_id);
+  ~DemonHandler(){;}
 private:
   EventDispatcher* eventdispatcher_;
 };

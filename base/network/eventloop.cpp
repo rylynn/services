@@ -9,7 +9,7 @@
 #include "kqueuepoller.h"
 #include "eventdispatcher.h"
 #include "timermanager.h"
-#include<sys/time.h>
+#include <sys/time.h>
 namespace service {
 bool EventLoop::Init(Poller* poll, EventDispatcher* dispatcher, TimerManager* timer_manager) {
   bool ret = true;
@@ -57,13 +57,13 @@ int EventLoop::Run() {
     tvp.tv_nsec = 500;
     while (1) {
       int ret = poll_->Poll(*this, tvp);
-      timer_manager_->NotifyTimeOutEvent(GetNow());
       if (ret == kReturnSysErr) {
-        return ret;
-      } else if (ret == 0) {
+        break;
+      }
+      timer_manager_->NotifyTimeOutEvent(GetNow());
+      if (ret == 0) {
         continue;
       }
-      std::cout<<"event comes" << std::endl;
       for (::std::vector<ActiveEvent>::iterator iter = active_events_.begin(); iter != active_events_.end(); iter++) {
         std::map<int , boost::shared_ptr<Channel> >::iterator channel_iter = event_map_.find(iter->fd);
         if ( channel_iter != event_map_.end()){
@@ -108,8 +108,8 @@ int EventLoop::Run() {
             } else {
               static_cast<KqueuPoller*>(poll_)->DisableWrite(channel_iter->first);
             }
-            }
-          } else if (iter->mask & ERROR) {
+          }
+          else if (iter->mask & ERROR) {
             dispatcher_->DispatcherEvent(ERROREVENT, channel_iter->first , channel_iter->second->GetWrBuffer());
           }
         } else {

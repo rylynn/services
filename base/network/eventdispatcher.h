@@ -8,10 +8,10 @@ namespace service {
 using std::map;
 using std::vector;
 enum EVENTTYPE {
-  CONNECTEVENT = 0,
-  READEVENT = 1,
-  WRITEEVENT = 2,
-  ERROREVENT = 3
+  CONNECTEVENT = 1,
+  READEVENT = 2,
+  WRITEEVENT = 4,
+  ERROREVENT = 8
 };
 class Buffer;
 class Handler;
@@ -19,9 +19,11 @@ class EventLoop;
 class EventDispatcher {
 public:
   EventDispatcher(EventLoop* eventloop):eventloop_(eventloop){;}
-  int RegisterHandler(EVENTTYPE event, Handler* handler);
+  int RegisterHandler(uint32_t event_mask, Handler* handler);
   int RemoveHandler(int handler_key);
   int DispatcherEvent(EVENTTYPE event, int channel_id, Buffer& buffer);
+private:
+  void AddEvent(EVENTTYPE event, Handler* handler);
 private:
   map<EVENTTYPE, map<int, boost::shared_ptr<Handler> > > handler_maps_; 
   EventLoop* eventloop_;

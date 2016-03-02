@@ -7,19 +7,23 @@
 #include <iostream>
 namespace service {
 using std::string;
-int EventDispatcher::RegisterHandler(EVENTTYPE event, Handler* handler) {
+int EventDispatcher::RegisterHandler(uint32_t event_mask, Handler* handler) {
     if (handler == NULL) {
       return kReturnArgumentErr;
     }
-    std::map<EVENTTYPE, map<int, boost::shared_ptr<Handler> > >::iterator handler_maps_iter = handler_maps_.find(event);
-    if (handler_maps_iter == handler_maps_.end()) {
-      map<int, boost::shared_ptr<Handler> > handler_map;
-      boost::shared_ptr<Handler> handler_ptr(handler);
-      handler_map.insert(std::make_pair(event, handler_ptr));
-      handler_maps_.insert(std::make_pair(event, handler_map));
-    } else {
-      boost::shared_ptr<Handler> handler_ptr(handler);
-      handler_maps_iter->second.insert(std::make_pair(event , handler_ptr));
+    if ( event_mask & CONNECTEVENT) {
+      std::cout<<"add connect"<<std::endl;
+      AddEvent(CONNECTEVENT, handler);
+    }
+    if (event_mask & READEVENT) {
+      std::cout<<"add read"<<std::endl;
+      AddEvent(READEVENT, handler);
+    } 
+    if (event_mask & WRITEEVENT) {
+      AddEvent(WRITEEVENT, handler);
+    }
+    if(event_mask & ERROREVENT){
+      AddEvent(ERROREVENT, handler);
     }
     return kReturnok;
 }
@@ -58,6 +62,22 @@ int EventDispatcher::DispatcherEvent(EVENTTYPE event, int channel_id, Buffer& bu
    }
   } while(false); 
   return ret;
+}
+
+void EventDispatcher::AddEvent(EVENTTYPE event, Handler* handler) {
+  if (handler == NULL) {
+    return;
+  }
+  std::map<EVENTTYPE, map<int, boost::shared_ptr<Handler> > >::iterator handler_maps_iter = handler_maps_.find(event);
+  if (handler_maps_iter == handler_maps_.end()) {
+    map<int, boost::shared_ptr<Handler> > handler_map;
+    boost::shared_ptr<Handler> handler_ptr(handler);
+    handler_map.insert(std::make_pair(event, handler_ptr));
+    handler_maps_.insert(std::make_pair(event, handler_map));
+  } else {
+    boost::shared_ptr<Handler> handler_ptr(handler);
+    handler_maps_iter->second.insert(std::make_pair(event , handler_ptr));
+  }
 }
 
 }

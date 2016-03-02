@@ -37,7 +37,6 @@ int Socket::Listen(int size) {
 }
 
 void Socket::Close() {
-  std::cout<<"fd:" << fd_ << " close" << std::endl; 
   close(fd_);
   fd_ = -1;
 }
@@ -51,7 +50,6 @@ int Socket::Connect() {
 }
 
 int Socket::Read(uint32_t& size) {
-  std::cout<<"[+]Socket::Read()"<< std::endl;
   int rbytes = 0;
   int r_ret = 0;
   do {
@@ -66,14 +64,11 @@ int Socket::Read(uint32_t& size) {
     }
     rbytes += r_ret;
   } while(1);
-  std::cout<<"total bytes"<<rbytes<<" socket recv:" << rbuf << std::endl;
-  std::cout<<"[-]Socket::Read(),ret:"<<r_ret<< std::endl;
   size = rbytes;
   return r_ret;
 }
 
 int Socket::Read(Buffer& buffer) {
-  std::cout<<"[+]Socket::Read()"<< std::endl;
   int rbytes = 0;
   int r_ret = 0;
   char t_rbuf[READFRAME] = {0};
@@ -89,9 +84,7 @@ int Socket::Read(Buffer& buffer) {
     }
     rbytes += r_ret;
   } while(1);
-  std::cout<<"total bytes"<<rbytes<<" socket recv:" << rbuf << std::endl;
   buffer.Append(t_rbuf, rbytes);
-  std::cout<<"[-]Socket::Read(),ret:"<<r_ret<< std::endl;
   return r_ret;
 }
 
@@ -99,7 +92,6 @@ int Socket::Write(char* data, uint32_t size) {
   if (size == 0) {
     return kReturnSysErr;
   }
-  std::cout<<"[+]Socket::Write" << std::endl;
   int wbytes = 0;
   int w_ret = 0;
   uint32_t real_size = size;
@@ -120,15 +112,12 @@ int Socket::Write(char* data, uint32_t size) {
       break;
     }
     wbytes += w_ret;
-    std::cout<<"loop write bytes:" << wbytes << std::endl;
     if (wbytes >= real_size) break;
   } while(1);
-  std::cout<<"[-]Socket::Write, ret:"<<w_ret<< " write data:"<< data <<std::endl;
   return wbytes;
 }
 
 int Socket::Write(Buffer& buffer, uint32_t size, uint32_t& haswrite) {
-  std::cout<<"[+]Socket::Write" << std::endl;
   if (buffer.ReadableSize() == 0 || size <= 0) {
     return kReturnok;
   }
@@ -145,12 +134,10 @@ int Socket::Write(Buffer& buffer, uint32_t size, uint32_t& haswrite) {
     }
     buffer.HasRead(w_ret);
     wbytes += w_ret;
-    std::cout<<"loop write bytes:" << wbytes << std::endl;
     assert(wbytes <= size);
     if (wbytes >= size) break;
   } while(1);
   haswrite = wbytes;
-  std::cout<<"[-]Socket::Write, ret:"<<w_ret<< " write data:"<< buffer.Peek() <<std::endl;
   return wbytes;
 }
 
