@@ -9,8 +9,8 @@ class TaskDispatcher : public boost::noncopyable{
   void CreateTaskQueue(int hash_key);
   int Dispatch(int hash_key);
 private:
-  std::map<int, std::RingBuffer<Task, 2048> > taskqueue_map_;
-  std::mutex lock_
+  std::map<int, RingBuffer<Task, 2048> > taskqueue_map_;
+  std::mutex lock_;
 };
 }
 #endif

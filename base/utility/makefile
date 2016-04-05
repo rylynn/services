@@ -1,13 +1,13 @@
 EXECUTABLE := main    # 可执行文件名
-LIBDIR:=  /usr/local/google  /usr/local/Cellar/boost/1.58.0/lib # 静态库目录
-LIBS :=               # 静态库文件名
+LIBDIR:=  /usr/local/google  /usr/local/Cellar/boost/1.58.0/lib# 静态库目录
+LIBS :=  pthread # 静态库文件名
 INCLUDES:=. /usr/local/include/ /usr/local/Cellar/boost/1.58.0/include/boost ../          # 头文件目录
 SRCDIR:=              # 除了当前目录外，其他的源代码文件目录
 CC:=g++
-CFLAGS := -g -Wall -o0 -std=c++11
+CFLAGS := -ggdb -Wall -o0 -std=c++11
 CPPFLAGS := $(CFLAGS)
 CPPFLAGS += $(addprefix -I,$(INCLUDES))
-CPPFLAGS += -MMD
+CPPFLAGS += -MMD -DDEFINE_INT_TYPES
 RM-F := rm -f
 SRCS := $(wildcard *.cpp) $(wildcard $(addsuffix /*.cpp, $(SRCDIR)))
 OBJS := $(patsubst %.cpp,%.o,$(SRCS))
