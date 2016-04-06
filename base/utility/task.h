@@ -5,7 +5,7 @@ class Task {
 public:
   virtual void Action() = 0;
   virtual void Release(){;}
-  virtual ~Task(){Release();}
+  virtual ~Task(){}
 };
 }
 #endif

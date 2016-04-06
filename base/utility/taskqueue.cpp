@@ -3,8 +3,6 @@
 namespace utility {
 
 void TaskEntity::Release() {
-  next = nullptr;
-  node = nullptr;
   delete this;
 }
 
@@ -15,16 +13,19 @@ int TaskQueue::PushBack(Task* task) {
       ret = kReturnArgumentErr;
       break;
     }
-    uint32_t length = length_.fetch_add(1) + 1;
+    uint32_t length = length_.fetch_add(1) + 1; // atomic add length
     if (length == 1) {
       Lock();
-      begin_node_ = new TaskEntity(task);
+      begin_node_ = new TaskEntity(task); // change begin_node_ should lock
+      end_node_ = begin_node_;
+      end_node_->SetNext(nullptr);
       UnLock();
     } else if (length > 1){
       TaskEntity* entity = new TaskEntity(task);
-      TaskEntity* tail = (begin_node_ + length -2);
       Lock();
-      tail->SetNext(entity);
+      end_node_->SetNext(entity);
+      end_node_ = entity;
+      //end_node_->SetNext(nullptr);
       UnLock();
     } else {
       ret = kReturnSysErr;
@@ -42,13 +43,15 @@ Task* TaskQueue::PopFront() {
       break;
     }
     if (length == 0) {
+      begin_node_ = end_node_;
       break;
     } 
-    length = length_.fetch_sub(1);
-    TaskEntity* temp = begin_node_;
-    ret = temp->Node();
+    length_.fetch_sub(1);
+    TaskEntity* entity = begin_node_;
+    ret = entity->Node();
     Lock();
     begin_node_ = begin_node_->Next();
+    entity->Release();
     UnLock();
   } while(0);
   return ret;
@@ -69,13 +72,18 @@ Task* TaskQueue::PopBack() {
     if (length == 0) {
       ret = begin_node_->Node();
       Lock();
-      begin_node_ = nullptr;
+      begin_node_->Release();
+      end_node_ = begin_node_ = nullptr;
+      end_node_->SetNext(nullptr);
       UnLock();
     } else {
-      TaskEntity* entity = begin_node_+ length - 1;
-      ret = entity->Next()->Node();
+      ret = end_node_->Node();
       Lock();
-      entity->SetNext(nullptr);
+      end_node_->Release();
+      TaskEntity* entity  = begin_node_;
+      for (;entity->Next() != end_node_; entity = entity->Next())  {/*get second last node*/}
+      end_node_ = entity;
+      end_node_->SetNext(nullptr);
       UnLock();
     }
   } while(0);

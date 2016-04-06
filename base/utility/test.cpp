@@ -10,7 +10,7 @@ void fun1(void* data) {
   cout<< " thread "<< std::this_thread::get_id()<<" run" << endl;
   std::chrono::milliseconds dura( 5);
   cout.flush();
-  for (int i = 0; i < 10000; i++) {
+  for (int i = 0; i < 10; i++) {
     Task* task = new DemonTask();
     queue->PushBack(task);
     //std::this_thread::sleep_for(dura);
@@ -19,6 +19,7 @@ void fun1(void* data) {
   cout.flush();
   Task* task = queue->PopFront();
   task->Action();
+  //task->Release();
   cout<<"f1:queue size" << queue->size()<<endl;;
   cout.flush();
 }
@@ -28,18 +29,20 @@ void fun2(void* data) {
   cout<< " thread "<< std::this_thread::get_id()<<" run" << endl;
   std::chrono::milliseconds dura( 50);
   cout.flush();
-  for (int i = 0; i < 5000; i++) {
-
+  for (int i = 0; i < 5; i++) {
     Task* task = new DemonTask();
     queue->PushBack(task);
     //std::this_thread::sleep_for(dura);
   }
   cout<<"f2:queue size" << queue->size()<<endl;;
   cout.flush();
-  Task* task = queue->PopBack();
+  Task* task = queue->PopFront();
   task->Action();
+  task->Release();
+  
   cout<<"f2:queue size" << queue->size()<<endl;;
   cout.flush();
+  (*queue)[10].Action();
 }
 
 int main() {
@@ -49,4 +52,7 @@ int main() {
   std::thread t2(fun2,&queue);
   t1.join();
   t2.join();
+  cout<<" main: queue size" << queue.size()<<endl;;
+  queue[12].Action();
+
 }

@@ -9,6 +9,6 @@ class DemonTask : public Task {
     std::cout.flush();
   }
   virtual void Release(){delete this;}
-  virtual ~DemonTask(){Release();}
+  virtual ~DemonTask(){}
 };
 #endif
