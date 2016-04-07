@@ -23,7 +23,7 @@ deps : $(DEPS)
 objs : $(OBJS)
 
 clean :
-	@$(RM-F) *.o
+	@$(RM-F) *.o *.d *~
 veryclean: clean
 	@$(RM-F) $(EXECUTABLE)
 rebuild: veryclean all

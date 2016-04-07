@@ -72,7 +72,7 @@ void EventDispatcher::AddEvent(EVENTTYPE event, Handler* handler) {
   if (handler_maps_iter == handler_maps_.end()) {
     map<int, boost::shared_ptr<Handler> > handler_map;
     boost::shared_ptr<Handler> handler_ptr(handler);
-    handler_map.insert(std::make_pair(event, handler_ptr));
+    handler_map.insert(std::make_pair((intptr_t)handler, handler_ptr));
     handler_maps_.insert(std::make_pair(event, handler_map));
   } else {
     boost::shared_ptr<Handler> handler_ptr(handler);
