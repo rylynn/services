@@ -4,7 +4,7 @@
 namespace utility {
 #define RINGBUFFER_SIZE 2 << 12
 template <class T, size_t kDefaultBufferSize = RINGBUFFER_SIZE>
-class RingBuffer : public boost::noncopyable {
+class RingBuffer {
 public:
   RingBuffer() {
     static_assert(((kDefaultBufferSize > 0) && ((kDefaultBufferSize & (~kDefaultBufferSize + 1)) == kDefaultBufferSize)), "RingBuffer's size must be a positive power of 2");
@@ -17,6 +17,7 @@ public:
   const T& operator [](int index) const {
     return buffer_[index & (kDefaultBufferSize - 1)];
   }
+  uint32_t Size() {return kDefaultBufferSize;}
 private:
   T buffer_[kDefaultBufferSize];
 };

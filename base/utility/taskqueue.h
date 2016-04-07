@@ -16,7 +16,7 @@ public:
     next = entity;
   }
 
-  TaskEntity* Next() {return next;}
+  TaskEntity* Next() const {return next;}
   Task* Node() { return node;}
   void Release();
 
