@@ -10,6 +10,7 @@
 #include "eventdispatcher.h"
 #include "timermanager.h"
 #include <sys/time.h>
+#include "utility/log.h"
 namespace service {
 bool EventLoop::Init(Poller* poll, EventDispatcher* dispatcher, TimerManager* timer_manager) {
   bool ret = true;
@@ -22,29 +23,6 @@ bool EventLoop::Init(Poller* poll, EventDispatcher* dispatcher, TimerManager* ti
     poll_ = poll;
     poll_->Init(event_size_);
     event_map_.clear();
-    Address addr("127.0.0.1",12345);
-    boost::shared_ptr<Socket>  share_socket_ptr( new Socket(addr,TCP));
-    int s_ret = share_socket_ptr->Bind();
-    if (s_ret != kReturnok) {
-      std::cout<< "bind error" << std::endl;
-      ret = false;
-      break;
-    }
-    s_ret = share_socket_ptr->Listen(20);
-    if (s_ret != kReturnok) {
-      std::cout << "listen error" << std::endl;
-      ret = false;
-      break;
-  }
-  share_socket_ptr->SetNoDelay();
-  share_socket_ptr->SetReUseAddr();
-  boost::shared_ptr<Channel> shared_channel_ptr(new Channel(*share_socket_ptr.get()));
-  event_map_.insert(std::make_pair(shared_channel_ptr->fd(), shared_channel_ptr));
-  ActiveEvent ae;
-  ae.fd = share_socket_ptr->fd_;
-  server_fd_ = ae.fd;
-  ae.mask |= READABLE;
-  poll_->AddEvent(ae);
   } while(0);
   return ret;
 }
@@ -71,14 +49,7 @@ int EventLoop::Run() {
             if (iter->fd == server_fd_) {
               int new_fd = channel_iter->second->Accept();
               std::cout<<"accept event comes, new_fd:" << new_fd <<std::endl;
-              boost::shared_ptr<Socket> new_socket(new Socket(new_fd));
-              new_socket->SetNoneBlock();
-              boost::shared_ptr<Channel> new_channel(new Channel(*new_socket.get()));
-              event_map_.insert(std::make_pair(new_fd, new_channel));
-              ActiveEvent ae;
-              ae.fd = new_fd;
-              ae.mask |= READABLE;
-              poll_->AddEvent(ae);
+              AddChannel(new_fd);
               dispatcher_->DispatcherEvent(CONNECTEVENT, channel_iter->first , channel_iter->second->GetRdBuffer());
             } else {
               int r_ret = channel_iter->second->Read();
@@ -150,6 +121,57 @@ uint32_t EventLoop::GetNow() {
   struct  timeval tv;
   gettimeofday(&tv, NULL);
   return tv.tv_sec;
+}
+
+void EventLoop::AddChannel(int fd) {
+  boost::shared_ptr<Socket> new_socket(new Socket(new_fd));
+  new_socket->SetNoneBlock();
+  boost::shared_ptr<Channel> new_channel(new Channel(*new_socket.get()));
+  event_map_.insert(std::make_pair(new_fd, new_channel));
+  ActiveEvent ae;
+  ae.fd = new_fd;
+  ae.mask |= READABLE;
+  poll_->AddEvent(ae);
+}
+
+int EventLoop::AddEventChannel(Channel* channel, bool is_server) {
+  /*
+  boost::shared_ptr<Socket>  share_socket_ptr( new Socket(addr_,TCP));
+  int s_ret = share_socket_ptr->Bind();
+  if (s_ret != kReturnok) {
+    std::cout<< "bind error" << std::endl;
+    ret = false;
+    break;
+  }
+  s_ret = share_socket_ptr->Listen(20);
+  if (s_ret != kReturnok) {
+    std::cout << "listen error" << std::endl;
+    ret = false;
+    break;
+  }
+  share_socket_ptr->SetNoDelay();
+  share_socket_ptr->SetReUseAddr();
+  boost::shared_ptr<Channel> shared_channel_ptr(new Channel(*share_socket_ptr.get()));
+  */
+  int ret = kReturnok;
+  do {
+    if (channel == NULL) {
+      LOG(LOG_ERR, "EventLoop::AddEventChannel(), channel ptr is null");
+      ret = kReturnArgumentErr;
+      break;
+    }
+    event_map_.insert(std::make_pair(shared_channel_ptr->fd(), shared_channel_ptr));
+    ActiveEvent ae;
+    ae.fd = share_socket_ptr->fd_;
+    poll_->AddEvent(ae);
+    if (is_server) {
+      ae.mask |= READABLE;
+      server_fd_ = ae.fd;
+    } else {
+      ae.mask |= (READABLE|WRITABLE);
+    }
+  } while(0);
+  return ret;
 }
 
 }
