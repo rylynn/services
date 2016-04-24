@@ -26,7 +26,7 @@ int Socket::Bind() {
   if (atoi(addr_.ip_) == 0)
     sock_addr.sin_addr.s_addr = INADDR_ANY;
   else 
-    sock_addr.sin_addr.s_addr = INADDR_ANY;
+    sock_addr.sin_addr.s_addr = inet_addr(addr_.ip_.c_str());
     //sock_addr.sin_addr.s_addr = htonl(inet_addr(addr_.ip_));
   int ret = bind(fd_, (sockaddr*) &sock_addr, sizeof(sock_addr));
   return ret;
